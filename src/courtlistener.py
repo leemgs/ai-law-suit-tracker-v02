@@ -13,6 +13,7 @@ BASE = "https://www.courtlistener.com"
 SEARCH_URL = BASE + "/api/rest/v4/search/"
 DOCKET_URL = BASE + "/api/rest/v4/dockets/{id}/"
 RECAP_DOCS_URL = BASE + "/api/rest/v4/recap-documents/"
+PARTIES_URL = BASE + "/api/rest/v4/parties/"
 DOCKET_ENTRIES_URL = BASE + "/api/rest/v4/docket-entries/"
 
 COMPLAINT_KEYWORDS = [
@@ -39,6 +40,25 @@ class CLDocument:
     extracted_defendant: str
     extracted_causes: str
     extracted_ai_snippet: str
+@dataclass
+class CLCaseSummary:
+    docket_id: int
+    case_name: str
+    docket_number: str
+    court: str
+    date_filed: str
+    status: str
+    judge: str
+    magistrate: str
+    nature_of_suit: str
+    cause: str
+    parties: str
+    complaint_doc_no: str
+    complaint_link: str
+    recent_updates: str
+    extracted_causes: str
+    extracted_ai_snippet: str
+
 
 def _headers() -> Dict[str, str]:
     token = os.getenv("COURTLISTENER_TOKEN", "").strip()
@@ -118,6 +138,13 @@ def list_recap_documents(docket_id: int, page_size: int = 50) -> List[dict]:
     if not data:
         return []
     return data.get("results", []) or []
+
+def list_parties(docket_id: int, page_size: int = 200) -> List[dict]:
+    data = _get(PARTIES_URL, params={"docket": docket_id, "page_size": page_size})
+    if not data:
+        return []
+    return data.get("results", []) or []
+
 
 def list_docket_entries(docket_id: int, page_size: int = 50) -> List[dict]:
     data = _get(DOCKET_ENTRIES_URL, params={"docket": docket_id, "page_size": page_size, "order_by": "-date_filed"})
@@ -202,4 +229,101 @@ def build_complaint_documents_from_hits(hits: List[dict], days: int = 3) -> List
     for x in docs_out:
         key = (x.docket_id, x.doc_number, x.date_filed, x.document_url)
         uniq[key] = x
+    return list(uniq.values())
+
+def _format_parties(parties: List[dict], max_n: int = 12) -> str:
+    names = []
+    for p in parties[:max_n]:
+        nm = _safe_str(p.get("name") or p.get("party_name") or p.get("partyName"))
+        typ = _safe_str(p.get("party_type") or p.get("partyType") or p.get("role"))
+        if nm:
+            names.append(f"{nm}({typ})" if typ else nm)
+    if not names:
+        return "미확인"
+    if len(parties) > max_n:
+        names.append("…")
+    return "; ".join(names)
+
+def _status_from_docket(docket: dict) -> str:
+    term = _safe_str(docket.get("date_terminated") or docket.get("dateTerminated") or "")
+    if term:
+        return f"종결({term[:10]})"
+    return "진행중/미확인"
+
+def build_case_summaries_from_hits(hits: List[dict]) -> List[CLCaseSummary]:
+    """Search hit -> docket -> parties + recap docs + docket entries로 케이스 요약을 구성."""
+    summaries: List[CLCaseSummary] = []
+    for hit in hits:
+        docket_id = _pick_docket_id(hit)
+        if not docket_id:
+            continue
+
+        docket = fetch_docket(int(docket_id)) or {}
+        case_name = _safe_str(docket.get("case_name") or docket.get("caseName") or hit.get("caseName") or hit.get("title")) or "미확인"
+        docket_number = _safe_str(docket.get("docket_number") or docket.get("docketNumber") or "") or "미확인"
+        court = _safe_str(docket.get("court") or docket.get("court_id") or docket.get("courtId") or "") or "미확인"
+
+        date_filed = _safe_str(docket.get("date_filed") or docket.get("dateFiled") or "")[:10] or "미확인"
+        status = _status_from_docket(docket)
+
+        judge = _safe_str(docket.get("assigned_to_str") or docket.get("assignedToStr") or docket.get("assigned_to") or docket.get("assignedTo") or "")
+        magistrate = _safe_str(docket.get("referred_to_str") or docket.get("referredToStr") or docket.get("referred_to") or docket.get("referredTo") or "")
+        judge = judge or "미확인"
+        magistrate = magistrate or "미확인"
+
+        nature_of_suit = _safe_str(docket.get("nature_of_suit") or docket.get("natureOfSuit") or "") or "미확인"
+        cause = _safe_str(docket.get("cause") or "") or "미확인"
+
+        parties = _format_parties(list_parties(int(docket_id)))
+
+        recap_docs = list_recap_documents(int(docket_id))
+        complaint_docs = [d for d in recap_docs if _is_complaint(d)]
+        complaint_doc_no = "미확인"
+        complaint_link = ""
+        extracted_causes = "미확인"
+        extracted_ai = ""
+
+        if complaint_docs:
+            d = sorted(complaint_docs, key=lambda x: _safe_str(x.get("date_filed") or x.get("dateFiled")), reverse=True)[0]
+            complaint_doc_no = _safe_str(d.get("document_number") or d.get("documentNumber") or d.get("document_num") or "") or "미확인"
+            complaint_link = _abs_url(d.get("absolute_url") or d.get("absoluteUrl") or d.get("url") or "") or _extract_pdf_url(d)
+
+            pdf_url = _extract_pdf_url(d)
+            snippet = ""
+            if pdf_url and (pdf_url.lower().endswith(".pdf") or "pdf" in pdf_url.lower()):
+                snippet = extract_pdf_text(pdf_url, max_chars=4500)
+            if snippet:
+                causes_list = detect_causes(snippet) or []
+                extracted_causes = ", ".join(causes_list) if causes_list else "미확인"
+                extracted_ai = extract_ai_training_snippet(snippet) or ""
+
+        entries = list_docket_entries(int(docket_id), page_size=20)
+        updates = []
+        for e in entries[:3]:
+            dt = _safe_str(e.get("date_filed") or e.get("dateFiled") or "")[:10]
+            desc = _safe_str(e.get("description") or e.get("text") or e.get("title") or "")
+            if dt or desc:
+                updates.append(f"{dt} {desc}".strip())
+        recent_updates = " / ".join(updates) if updates else "미확인"
+
+        summaries.append(CLCaseSummary(
+            docket_id=int(docket_id),
+            case_name=case_name,
+            docket_number=docket_number,
+            court=court,
+            date_filed=date_filed,
+            status=status,
+            judge=judge,
+            magistrate=magistrate,
+            nature_of_suit=nature_of_suit,
+            cause=cause,
+            parties=parties,
+            complaint_doc_no=complaint_doc_no,
+            complaint_link=complaint_link,
+            recent_updates=recent_updates,
+            extracted_causes=extracted_causes,
+            extracted_ai_snippet=extracted_ai,
+        ))
+
+    uniq = {s.docket_id: s for s in summaries}
     return list(uniq.values())

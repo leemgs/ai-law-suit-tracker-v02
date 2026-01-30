@@ -36,3 +36,12 @@ Repository → Settings → Secrets and variables → Actions → New repository
 
 ## 균형형 쿼리 튜닝 적용
 - CourtListener Search에 `type=r`, `available_only=on`, `order_by=entry_date_filed desc`를 적용해 RECAP 문서(도켓/문서) 중심으로 최신 항목을 우선 수집합니다.
+
+
+## 추가: 소송번호(도켓) 기반 확장 필드
+- 접수일(Date Filed), 상태(Open/Closed), 담당 판사/치안판사, Nature of Suit(NOS), Cause(법률 조항), Parties roster, Complaint 문서번호/링크, 최근 도켓 업데이트 3건을 RECAP 도켓에서 자동 추출합니다.
+
+
+## Actions 권한/로그 개선
+- workflow에 `permissions: issues: write`를 추가해 PAT 없이도 이슈 댓글 업로드가 가능하도록 했습니다.
+- Actions 로그에 리포트 본문 일부를 출력하고 `tee run_output.log`로 로그 파일도 남깁니다.

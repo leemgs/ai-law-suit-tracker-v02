@@ -1,4 +1,7 @@
 name: hourly-monitor
+permissions:
+  contents: read
+  issues: write
 
 on:
   schedule:
@@ -26,10 +29,10 @@ jobs:
         env:
           GITHUB_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO: ${{ github.event.repository.name }}
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           COURTLISTENER_TOKEN: ${{ secrets.COURTLISTENER_TOKEN }}
           ISSUE_TITLE: "AI 불법/무단 학습데이터 소송 모니터링"
           ISSUE_LABEL: "ai-lawsuit-monitor"
         run: |
-          python -m src.run
+          python -m src.run | tee run_output.log
