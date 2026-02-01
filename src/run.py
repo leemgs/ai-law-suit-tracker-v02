@@ -67,15 +67,15 @@ def main() -> None:
         print(f"이전 날짜 이슈 자동 Close: {closed_nums}")
     
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    comment_body = f"### 실행 결과 ({timestamp})\n\n{md}"
+    comment_body = f"\n\n{md}"
     create_comment(owner, repo, gh_token, issue_no, comment_body)
     print(f"Issue #{issue_no} 댓글 업로드 완료")
 
     # 5) Slack 요약 전송
     summary_lines = [
         f"*AI 소송 모니터링 업데이트* ({timestamp})",
-        f"- 뉴스 보강 건수: {len(lawsuits)}건",
-        f"- 수집된 법원 문서 건수: {len(cl_docs)}건",
+        f"- 언론보도 기반 건수: {len(lawsuits)}건",
+        f"- 법원기록 기반 건수: {len(cl_docs)}건",
         f"- GitHub Issue: <{issue_url}|#{issue_no}>",
     ]
     
