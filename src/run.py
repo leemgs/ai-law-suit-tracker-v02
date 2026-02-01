@@ -42,6 +42,10 @@ def main() -> None:
     hits = list(dedup.values())
 
     cl_docs = build_complaint_documents_from_hits(hits, days=3)
+    # RECAP 도켓(사건) 요약: "법원 사건(도켓) 확인 건수"로 사용
+    cl_cases = build_case_summaries_from_hits(hits)
+    docket_case_count = len(cl_cases)
+    recap_doc_count = len(cl_docs)
 
     # 2) 뉴스 수집
     news = fetch_news()
@@ -49,7 +53,6 @@ def main() -> None:
     lawsuits = build_lawsuits_from_news(news, known)
 
     # 3) 렌더링
-    cl_cases = build_case_summaries_from_hits(hits)
     md = render_markdown(lawsuits, cl_docs, cl_cases)
     md = f"### 실행 시각(KST): {run_ts_kst}\n\n" + md
     
@@ -77,7 +80,8 @@ def main() -> None:
     summary_lines = [
         f"*AI 소송 모니터링 업데이트* ({timestamp})",
         f"- 언론보도 기반 수집 건수: {len(lawsuits)}건",
-        f"- 법원기록 기반 수집 건수: {len(cl_docs)}건",
+        f"- 법원 사건(RECAP 도켓) 확인 건수: {docket_case_count}건",
+        f"- 법원 문서(RECAP Complaint 등) 확보 건수: {recap_doc_count}건",
         f"- GitHub Issue (For more details): <{issue_url}|#{issue_no}>",
     ]
     
