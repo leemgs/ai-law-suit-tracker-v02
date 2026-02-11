@@ -235,10 +235,29 @@ def render_markdown(
     # 📘 위험도 평가 척도
     lines.append("<details>")
     lines.append("<summary><strong>📘 AI 학습 위험도 점수(0~100) 평가 척도</strong></summary>\n")
-    lines.append("- 0~39 🟢 : 간접 연관")
-    lines.append("- 40~59 🟡 : 학습 쟁점 존재")
-    lines.append("- 60~79 ⚠️ : 모델 학습 직접 언급")
+    lines.append("AI 모델 학습과의 직접성 + 법적 리스크 강도를 수치화한 지표입니다.")
+    lines.append("0에 가까울수록 → 간접/주변 이슈")
+    lines.append("100에 가까울수록 → AI 학습 핵심 리스크 사건")   
+    lines.append("")
+    
+    lines.append("### 📊 등급 기준")
+    lines.append("- 00~039 🟢 : 간접 연관")
+    lines.append("- 40~059 🟡 : 학습 쟁점 존재")
+    lines.append("- 60~079 ⚠️ : 모델 학습 직접 언급")
     lines.append("- 80~100 🔥 : 무단 수집 + 학습 + 상업적 사용 고위험")
+    lines.append("")
+
+    lines.append("### 🧮 점수 산정 기준")
+    lines.append("| 항목 | 조건 | 점수 |")
+    lines.append("|---|---|---|")
+    lines.append("| 무단 데이터 수집 명시 | scrape / crawl / ingest | +30 |")
+    lines.append("| 모델 학습 직접 언급 | train / training / model | +30 |")
+    lines.append("| 상업적 사용 | commercial / profit | +15 |")
+    lines.append("| 저작권 소송 (820) | Nature = 820 | +15 |")
+    lines.append("| 집단소송 | class action | +10 |")
+    lines.append("")
     lines.append("</details>\n")
 
+
+    
     return "\n".join(lines)
