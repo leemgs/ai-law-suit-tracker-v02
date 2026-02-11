@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import List
 from collections import Counter
+import re
 from .extract import Lawsuit
 from .courtlistener import CLDocument, CLCaseSummary
 
@@ -32,6 +33,18 @@ def _short(val: str, limit: int = 140) -> str:
     if len(val) <= limit:
         return _esc(val)
     return f"<details><summary>내용 펼치기</summary>{_esc(val)}</details>"
+
+
+# =====================================================
+# 🔥 slug 변환 함수 (추가된 부분)
+# =====================================================
+def _slugify_case_name(name: str) -> str:
+    name = (name or "").lower()
+    name = name.replace("v.", "v")
+    name = re.sub(r"[^a-z0-9\s-]", "", name)
+    name = re.sub(r"\s+", "-", name)
+    name = re.sub(r"-+", "-", name)
+    return name.strip("-")
 
 
 # =====================================================
@@ -118,13 +131,13 @@ def render_markdown(
 
     # 🧠 AI Top3
     if cl_cases:
-        lines.append("## 🧠 AI 핵심 요약 (Top 3)\n")
+        lines.append("## 🧠 핵심 요약 (Top 3)\n")
         top_cases = sorted(cl_cases, key=lambda x: x.date_filed, reverse=True)[:3]
         for c in top_cases:
             lines.append(f"> **{_esc(c.case_name)}**")
             lines.append(f"> {_short(c.extracted_ai_snippet, 120)}\n")
 
-    # 📰 뉴스 테이블 (기존 + 위험도 추가)
+    # 📰 뉴스 테이블
     if lawsuits:
         lines.append("## 📰 뉴스/RSS 기반 소송 요약")
         lines.append("| 일자 | 제목 | 소송번호 | 사유 | 위험도 예측 점수 |")
@@ -148,18 +161,7 @@ def render_markdown(
 
         lines.append("")
 
-    # 📘 위험도 평가 척도
-    lines.append("<details>")
-    lines.append("<summary><strong>📘 AI 학습 위험도 점수(0~100) 평가 척도</strong></summary>\n")
-    lines.append("- 0~39 🟢 : 간접 연관")
-    lines.append("- 40~59 🟡 : 학습 쟁점 존재")
-    lines.append("- 60~79 ⚠️ : 모델 학습 직접 언급")
-    lines.append("- 80~100 🔥 : 무단 수집 + 학습 + 상업적 사용 고위험")
-    lines.append("</details>\n")
-
-    # =====================================================
-    # ⚖️ RECAP 케이스 (820 + Others 모두 출력)
-    # =====================================================
+    # ⚖️ RECAP 케이스
     if cl_cases:
 
         copyright_cases = []
@@ -176,7 +178,10 @@ def render_markdown(
             lines.append(_md_sep(5))
 
             for c in sorted(cases, key=lambda x: x.date_filed, reverse=True):
-                docket_url = f"https://www.courtlistener.com/docket/{c.docket_id}/"
+
+                slug = _slugify_case_name(c.case_name)
+                docket_url = f"https://www.courtlistener.com/docket/{c.docket_id}/{slug}/"
+
                 score = calculate_case_risk_score(c)
 
                 lines.append(
@@ -187,14 +192,12 @@ def render_markdown(
                     f"{format_risk(score)} |"
                 )
 
-        # 🔥 820 출력
         lines.append("## 🔥 820 Copyright\n")
         if copyright_cases:
             render_case_table(copyright_cases)
         else:
             lines.append("820 사건 없음\n")
 
-        # 📁 Others 출력 (기존처럼 fold 유지)
         lines.append("\n<details>")
         lines.append(
             '<summary><span style="font-size:1.5em; font-weight:bold;">📁 Others</span></summary>\n'
@@ -219,7 +222,7 @@ def render_markdown(
                 f"{_esc(d.doc_type)} | {_mdlink('Document', link)} |"
             )
 
-    # 📰 기사 주소 fold
+    # 📰 기사 주소
     if lawsuits:
         lines.append("<details>")
         lines.append("<summary><strong>📰 기사 주소</strong></summary>\n")
@@ -228,5 +231,14 @@ def render_markdown(
             for u in s.article_urls:
                 lines.append(f"- {u}")
         lines.append("</details>\n")
+
+    # 📘 위험도 평가 척도
+    lines.append("<details>")
+    lines.append("<summary><strong>📘 AI 학습 위험도 점수(0~100) 평가 척도</strong></summary>\n")
+    lines.append("- 0~39 🟢 : 간접 연관")
+    lines.append("- 40~59 🟡 : 학습 쟁점 존재")
+    lines.append("- 60~79 ⚠️ : 모델 학습 직접 언급")
+    lines.append("- 80~100 🔥 : 무단 수집 + 학습 + 상업적 사용 고위험")
+    lines.append("</details>\n")
 
     return "\n".join(lines)
