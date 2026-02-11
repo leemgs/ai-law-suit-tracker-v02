@@ -212,7 +212,7 @@ def render_markdown(
 
         lines.append("\n<details>")
         lines.append(
-            '<summary><strong><span style="font-size:2.5em; font-weight:bold;">📁 RECAP: Others</span></strong></summary>\n'
+            "<summary><strong><span style=\"font-size:2.5em; font-weight:bold;\">📁 RECAP: Others</span></strong></summary>\n"
         )
 
         if other_cases:
@@ -238,7 +238,7 @@ def render_markdown(
     # 📰 기사 주소
     if lawsuits:
         lines.append("<details>")
-        lines.append("<summary><strong><span style="font-size:2.5em; font-weight:bold;">📰 기사 주소</span></strong></summary>\n")
+        lines.append("<summary><strong><span style=\"font-size:2.5em; font-weight:bold;\">📰 기사 주소</span></strong></summary>\n")
         for s in lawsuits:
             lines.append(f"### {_esc(s.article_title or s.case_title)}")
             for u in s.article_urls:
@@ -247,7 +247,7 @@ def render_markdown(
 
     # 📘 위험도 평가 척도
     lines.append("<details>")
-    lines.append("<summary><strong><span style="font-size:2.5em; font-weight:bold;">📘 AI 학습 위험도 점수(0~100) 평가 척도</span></strong></summary>\n")
+    lines.append("<summary><strong><span style=\"font-size:2.5em; font-weight:bold;\">📘 AI 학습 위험도 점수(0~100) 평가 척도</span></strong></summary>\n")
     lines.append("AI 모델 학습과의 직접성 + 법적 리스크 강도를 수치화한 지표입니다.")
     lines.append("0에 가까울수록 → 간접/주변 이슈")
     lines.append("100에 가까울수록 → AI 학습 핵심 리스크 사건")   
