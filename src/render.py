@@ -27,18 +27,59 @@ def _mdlink(label: str, url: str) -> str:
     return f"[{label}]({url})"
 
 
-def _details(summary: str, body: str) -> str:
-    body = body or ""
-    if not body or body == "미확인":
-        return "미확인"
-    return f"<details><summary>{summary}</summary>{_esc(body)}</details>"
-
-
 def _short(val: str, limit: int = 140) -> str:
     val = val or ""
     if len(val) <= limit:
         return _esc(val)
-    return _details("내용 펼치기", val)
+    return f"<details><summary>내용 펼치기</summary>{_esc(val)}</details>"
+
+
+# =====================================================
+# 🔥 AI 학습 위험도 점수 계산
+# =====================================================
+def calculate_ai_risk_score(case: CLCaseSummary) -> int:
+    score = 0
+    text = f"{case.extracted_ai_snippet or ''} {case.extracted_causes or ''}".lower()
+
+    if any(k in text for k in ["scrape", "crawl", "ingest", "harvest"]):
+        score += 30
+
+    if any(k in text for k in ["train", "training", "model", "llm", "neural"]):
+        score += 30
+
+    if any(k in text for k in ["commercial", "profit", "monetize"]):
+        score += 15
+
+    if case.nature_of_suit and "820" in case.nature_of_suit:
+        score += 15
+
+    if "class action" in text:
+        score += 10
+
+    return min(score, 100)
+
+
+def format_risk(score: int) -> str:
+    if score >= 80:
+        return f"🔥 {score}"
+    if score >= 60:
+        return f"⚠️ {score}"
+    if score >= 40:
+        return f"🟡 {score}"
+    return f"🟢 {score}"
+
+
+def classify_data_type(text: str) -> str:
+    text = (text or "").lower()
+    if any(k in text for k in ["book", "text", "novel"]):
+        return "텍스트/도서"
+    if any(k in text for k in ["image", "photo", "picture"]):
+        return "이미지"
+    if any(k in text for k in ["code", "repository", "github"]):
+        return "소스코드"
+    if any(k in text for k in ["music", "audio"]):
+        return "음원"
+    return "미확인"
 
 
 def render_markdown(
@@ -51,7 +92,7 @@ def render_markdown(
     lines: List[str] = []
 
     # =====================================================
-    # 📊 KPI 카드형 요약
+    # 📊 KPI 요약
     # =====================================================
     lines.append(f"## 📊 최근 {lookback_days}일 요약\n")
     lines.append("| 구분 | 건수 |")
@@ -61,7 +102,7 @@ def render_markdown(
     lines.append(f"| 📄 RECAP 문서 | **{len(cl_docs)}** |\n")
 
     # =====================================================
-    # 📊 Nature of Suit 통계
+    # 📊 Nature 통계
     # =====================================================
     if cl_cases:
         counter = Counter([c.nature_of_suit or "미확인" for c in cl_cases])
@@ -73,45 +114,7 @@ def render_markdown(
         lines.append("")
 
     # =====================================================
-    # 🧠 AI 요약 3줄 하이라이트
-    # =====================================================
-    if cl_cases:
-        lines.append("## 🧠 AI 핵심 요약 (Top 3)\n")
-        top_cases = sorted(cl_cases, key=lambda x: x.date_filed, reverse=True)[:3]
-        for c in top_cases:
-            snippet = _short(c.extracted_ai_snippet, 120)
-            lines.append(f"> **{_esc(c.case_name)}**")
-            lines.append(f"> {snippet}\n")
-
-    # =====================================================
-    # 📰 뉴스 요약
-    # =====================================================
-    if lawsuits:
-        lines.append("## 📰 뉴스/RSS 기반 소송 요약")
-        lines.append("| 일자 | 제목 | 소송번호 | 사유 |")
-        lines.append(_md_sep(4))
-
-        for s in lawsuits:
-            if (s.case_title and s.case_title != "미확인") and (
-                s.article_title and s.article_title != s.case_title
-            ):
-                display_title = f"{s.case_title} / {s.article_title}"
-            elif s.case_title and s.case_title != "미확인":
-                display_title = s.case_title
-            else:
-                display_title = s.article_title or s.case_title
-
-            article_url = s.article_urls[0] if getattr(s, "article_urls", None) else ""
-            title_cell = _mdlink(display_title, article_url)
-
-            lines.append(
-                f"| {_esc(s.update_or_filed_date)} | {title_cell} | {_esc(s.case_number)} | {_short(s.reason)} |"
-            )
-
-        lines.append("\n---\n")
-
-    # =====================================================
-    # ⚖️ RECAP 케이스 분리
+    # ⚖️ RECAP 케이스
     # =====================================================
     if cl_cases:
 
@@ -125,56 +128,51 @@ def render_markdown(
             else:
                 other_cases.append(c)
 
-        def render_table(cases):
-            lines.append("| 상태 | 접수일 | 케이스명 | Nature | Complaint |")
-            lines.append(_md_sep(5))
+        def render_ai_table(cases):
+            lines.append("| 상태 | 케이스명 | 도켓번호 | 데이터 유형 | AI 학습 핵심 주장 | 법적 근거 | 위험도 | 판사 | 법원 |")
+            lines.append(_md_sep(9))
+
             for c in sorted(cases, key=lambda x: x.date_filed, reverse=True)[:25]:
+
+                docket_url = f"https://www.courtlistener.com/docket/{c.docket_id}/"
+                score = calculate_ai_risk_score(c)
+                risk_display = format_risk(score)
+                data_type = classify_data_type(c.extracted_ai_snippet)
+
                 lines.append(
                     f"| {_esc(c.status)} | "
-                    f"{_esc(c.date_filed)} | "
-                    f"{_mdlink(c.case_name, f'https://www.courtlistener.com/docket/{c.docket_id}/')} | "
-                    f"{_esc(c.nature_of_suit)} | "
-                    f"{_mdlink('Complaint', c.complaint_link)} |"
+                    f"{_mdlink(c.case_name, docket_url)} | "
+                    f"{_mdlink(c.docket_number, docket_url)} | "
+                    f"{data_type} | "
+                    f"{_short(c.extracted_ai_snippet, 120)} | "
+                    f"{_esc(c.cause)} | "
+                    f"{risk_display} | "
+                    f"{_esc(c.judge)} | "
+                    f"{_esc(c.court)} |"
                 )
 
         # 🔥 820
-        lines.append("## 🔥 820 Copyright\n")
+        lines.append("## 🔥 820 Copyright (AI 학습 쟁점 중심)\n")
         if copyright_cases:
-            render_table(copyright_cases)
+            render_ai_table(copyright_cases)
         else:
             lines.append("820 사건 없음\n")
 
-        # 📁 Others (h2 크기 스타일 적용)
+        # 📁 Others
         lines.append("\n<details>")
         lines.append(
             '<summary><span style="font-size:1.5em; font-weight:bold;">📁 Others</span></summary>\n'
         )
 
         if other_cases:
-            render_table(other_cases)
+            render_ai_table(other_cases)
         else:
             lines.append("Others 사건 없음\n")
 
         lines.append("</details>\n")
 
     # =====================================================
-    # 📄 RECAP 문서
-    # =====================================================
-    if cl_docs:
-        lines.append("## 📄 RECAP 문서 기반 (Complaint/Petition 우선)")
-        lines.append("| 제출일 | 케이스 | 문서유형 | 문서 |")
-        lines.append(_md_sep(4))
-
-        for d in sorted(cl_docs, key=lambda x: x.date_filed, reverse=True)[:20]:
-            link = d.document_url or d.pdf_url
-            lines.append(
-                f"| {_esc(d.date_filed)} | {_esc(d.case_name)} | {_esc(d.doc_type)} | {_mdlink('Document', link)} |"
-            )
-
-        lines.append("")
-
-    # =====================================================
-    # 📰 기사 주소 (h2 크기 스타일 적용)
+    # 📰 기사 주소
     # =====================================================
     if lawsuits:
         lines.append("<details>")
