@@ -206,14 +206,13 @@ def render_markdown(
                     f"{_esc(c.recent_updates)} |"
                 )
 
-        lines.append("## 🔥 RECAP: 820 Copyright\n")
+        lines.append("## 🔥 RECAP 1/2: 820 Copyright\n")
         if copyright_cases:
             render_case_table(copyright_cases)
         else:
             lines.append("820 사건 없음\n")
 
-        lines.append("## 🔥 RECAP: 820 Copyright\n")
-        lines.append("## 📁 RECAP: Others\n")
+        lines.append("## 📁 RECAP 2/2: Others\n")
         if other_cases:
             render_case_table(other_cases)
         else:
