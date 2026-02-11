@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import List
+from collections import Counter
 from .extract import Lawsuit
 from .courtlistener import CLDocument, CLCaseSummary
 
@@ -30,7 +31,7 @@ def _details(summary: str, body: str) -> str:
     body = body or ""
     if not body or body == "미확인":
         return "미확인"
-    return f"<details><summary>{_esc(summary)}</summary>{_esc(body)}</details>"
+    return f"<details><summary>{summary}</summary>{_esc(body)}</details>"
 
 
 def _short(val: str, limit: int = 140) -> str:
@@ -49,10 +50,6 @@ def render_markdown(
 
     lines: List[str] = []
 
-    os = __import__("os")
-    show_candidates = os.getenv("SHOW_DOCKET_CANDIDATES", "").lower() in ("1", "true", "yes", "y")
-    collapse_article_urls = os.getenv("COLLAPSE_ARTICLE_URLS", "").lower() in ("1", "true", "yes", "y")
-
     # =====================================================
     # 📊 KPI 카드형 요약
     # =====================================================
@@ -63,23 +60,38 @@ def render_markdown(
     lines.append(f"| ⚖️ RECAP 사건 | **{len(cl_cases)}** |")
     lines.append(f"| 📄 RECAP 문서 | **{len(cl_docs)}** |\n")
 
-    # Quick Navigation
-    lines.append("## 🔎 빠른 이동")
-    lines.append("- [🔥 820 Copyright](#-820-copyright)")
-    lines.append("- [📁 Others](#-others)")
-    lines.append("- [📄 RECAP 문서](#-recap-문서-기반-complaintpetition-우선)")
-    lines.append("- [📰 기사 주소](#기사-주소)\n")
+    # =====================================================
+    # 📊 Nature of Suit 통계
+    # =====================================================
+    if cl_cases:
+        counter = Counter([c.nature_of_suit or "미확인" for c in cl_cases])
+        lines.append("## 📊 Nature of Suit 통계\n")
+        lines.append("| Nature of Suit | 건수 |")
+        lines.append("|---|---|")
+        for k, v in counter.most_common(10):
+            lines.append(f"| {_esc(k)} | **{v}** |")
+        lines.append("")
 
     # =====================================================
-    # 📰 뉴스 테이블
+    # 🧠 AI 요약 3줄 하이라이트
+    # =====================================================
+    if cl_cases:
+        lines.append("## 🧠 AI 핵심 요약 (Top 3)\n")
+        top_cases = sorted(cl_cases, key=lambda x: x.date_filed, reverse=True)[:3]
+        for c in top_cases:
+            snippet = _short(c.extracted_ai_snippet, 120)
+            lines.append(f"> **{_esc(c.case_name)}**")
+            lines.append(f"> {snippet}\n")
+
+    # =====================================================
+    # 📰 뉴스 요약
     # =====================================================
     if lawsuits:
         lines.append("## 📰 뉴스/RSS 기반 소송 요약")
-        lines.append("| 일자 | 제목 | 소송번호 | 사유 | 원고 | 피고 | 국가 | 법원 |")
-        lines.append(_md_sep(8))
+        lines.append("| 일자 | 제목 | 소송번호 | 사유 |")
+        lines.append(_md_sep(4))
 
         for s in lawsuits:
-
             if (s.case_title and s.case_title != "미확인") and (
                 s.article_title and s.article_title != s.case_title
             ):
@@ -93,7 +105,7 @@ def render_markdown(
             title_cell = _mdlink(display_title, article_url)
 
             lines.append(
-                f"| {_esc(s.update_or_filed_date)} | {title_cell} | {_esc(s.case_number)} | {_short(s.reason)} | {_esc(s.plaintiff)} | {_esc(s.defendant)} | {_esc(s.country)} | {_esc(s.court)} |"
+                f"| {_esc(s.update_or_filed_date)} | {title_cell} | {_esc(s.case_number)} | {_short(s.reason)} |"
             )
 
         lines.append("\n---\n")
@@ -113,36 +125,31 @@ def render_markdown(
             else:
                 other_cases.append(c)
 
-        def render_recap_table(cases: List[CLCaseSummary]):
-            lines.append("| 상태 | 접수일 | 케이스명 | 도켓번호 | 법원 | Nature | Cause | Complaint |")
-            lines.append(_md_sep(8))
-
+        def render_table(cases):
+            lines.append("| 상태 | 접수일 | 케이스명 | Nature | Complaint |")
+            lines.append(_md_sep(5))
             for c in sorted(cases, key=lambda x: x.date_filed, reverse=True)[:25]:
-
                 lines.append(
                     f"| {_esc(c.status)} | "
                     f"{_esc(c.date_filed)} | "
                     f"{_mdlink(c.case_name, f'https://www.courtlistener.com/docket/{c.docket_id}/')} | "
-                    f"{_esc(c.docket_number)} | "
-                    f"{_esc(c.court)} | "
                     f"{_esc(c.nature_of_suit)} | "
-                    f"{_short(c.cause)} | "
                     f"{_mdlink('Complaint', c.complaint_link)} |"
                 )
 
-        # 🔥 820 강조
-        lines.append("## 🔥 820 Copyright")
+        # 🔥 820
+        lines.append("## 🔥 820 Copyright\n")
         if copyright_cases:
-            render_recap_table(copyright_cases)
+            render_table(copyright_cases)
         else:
-            lines.append("820 Copyright 사건 없음\n")
+            lines.append("820 사건 없음\n")
 
-        # 📁 Others 접기
+        # 📁 Others (동일 크기 + fold)
         lines.append("\n<details>")
-        lines.append("<summary>## 📁 Others</summary>\n")
+        lines.append("<summary><strong>📁 Others</strong></summary>\n")
 
         if other_cases:
-            render_recap_table(other_cases)
+            render_table(other_cases)
         else:
             lines.append("Others 사건 없음\n")
 
@@ -153,27 +160,25 @@ def render_markdown(
     # =====================================================
     if cl_docs:
         lines.append("## 📄 RECAP 문서 기반 (Complaint/Petition 우선)")
-        lines.append("| 제출일 | 케이스 | 문서유형 | 원고 | 피고 | 핵심 | 문서 |")
-        lines.append(_md_sep(7))
+        lines.append("| 제출일 | 케이스 | 문서유형 | 문서 |")
+        lines.append(_md_sep(4))
 
         for d in sorted(cl_docs, key=lambda x: x.date_filed, reverse=True)[:20]:
             link = d.document_url or d.pdf_url
             lines.append(
-                f"| {_esc(d.date_filed)} | {_esc(d.case_name)} | {_esc(d.doc_type)} | "
-                f"{_esc(d.extracted_plaintiff)} | {_esc(d.extracted_defendant)} | "
-                f"{_short(d.extracted_ai_snippet)} | {_mdlink('Document', link)} |"
+                f"| {_esc(d.date_filed)} | {_esc(d.case_name)} | {_esc(d.doc_type)} | {_mdlink('Document', link)} |"
             )
 
         lines.append("")
 
     # =====================================================
-    # 📰 기사 주소
+    # 📰 기사 주소 (Fold 처리)
     # =====================================================
-    lines.append("## 기사 주소\n")
-
     if lawsuits:
-        for s in lawsuits:
+        lines.append("<details>")
+        lines.append("<summary><strong>📰 기사 주소</strong></summary>\n")
 
+        for s in lawsuits:
             if (s.case_title and s.case_title != "미확인") and (
                 s.article_title and s.article_title != s.case_title
             ):
@@ -183,17 +188,11 @@ def render_markdown(
             else:
                 header_title = s.article_title or s.case_title
 
-            lines.append(f"### {_esc(header_title)} ({_esc(s.case_number)})")
-
-            if collapse_article_urls and s.article_urls:
-                lines.append("<details><summary>기사 주소 펼치기</summary>")
-                for u in s.article_urls:
-                    lines.append(f"- {u}")
-                lines.append("</details>")
-            else:
-                for u in s.article_urls:
-                    lines.append(f"- {u}")
-
+            lines.append(f"### {_esc(header_title)}")
+            for u in s.article_urls:
+                lines.append(f"- {u}")
             lines.append("")
+
+        lines.append("</details>\n")
 
     return "\n".join(lines)
