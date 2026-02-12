@@ -378,8 +378,11 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
         if not data:
             break
 
-        for e in data.get("results", []):
-            desc = _safe_str(e.get("description")).lower()
+            desc = " ".join([
+                _safe_str(e.get("description")),
+                _safe_str(e.get("docket_text")),
+                _safe_str(e.get("text"))
+            ]).lower()
 
             if any(k in desc for k in COMPLAINT_KEYWORDS):
                 complaints.append(e)
