@@ -398,6 +398,7 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
 
         latest = complaints[0]
 
+        # Try to get entry_number from docket entry as fallback
         complaint_doc_no = _safe_str(latest.get("entry_number")) or "미확인"
         desc_text = _safe_str(latest.get("description"))
         complaint_type = _detect_complaint_type(desc_text)
@@ -408,11 +409,21 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
         docs = recap.get("results", [])
 
         if docs:
-            pdf_path = docs[0].get("filepath_local") or ""
-            complaint_link = _abs_url(pdf_path)
+            # Extract document number and PDF from the first RECAP document
+            first_doc = docs[0]
+            doc_num = _safe_str(first_doc.get("document_number"))
+            if doc_num:
+                complaint_doc_no = doc_num
+            
+            pdf_path = first_doc.get("filepath_local") or ""
+            if pdf_path:
+                complaint_link = _abs_url(pdf_path)
 
+        # Fallback to docket entry URL if no PDF link found
         if not complaint_link:
-            complaint_link = _abs_url(latest.get("absolute_url") or "")
+            entry_url = _safe_str(latest.get("absolute_url") or "")
+            if entry_url:
+                complaint_link = _abs_url(entry_url)
     
     # --------------------------------------------------
 
