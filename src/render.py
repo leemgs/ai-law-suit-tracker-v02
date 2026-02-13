@@ -25,6 +25,11 @@ def _mdlink(label: str, url: str) -> str:
     url = (url or "").strip()
     if not url:
         return label
+
+    # 🔥 이미 Markdown 링크 형식이면 그대로 반환 (이중 방지)
+    if url.startswith("[") and "](" in url:
+        return url
+        
     return f"[{label}]({url})"
 
 
@@ -202,7 +207,7 @@ def render_markdown(
                     f"{_esc(c.judge)} | "
                     f"{court_display} | "
                     f"{_esc(c.complaint_doc_no)} | "
-                    f"{_mdlink('PDF', c.complaint_link)} | "
+                    f"{_mdlink('PDF', c.complaint_link) if c.complaint_link else ''} | "
                     f"{_esc(c.recent_updates)} |"
                 )
 
