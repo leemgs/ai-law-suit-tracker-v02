@@ -405,18 +405,18 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
             ]).lower()
 
             if any(k in desc for k in COMPLAINT_KEYWORDS):
-                complaints.append(e)
+                complaints_docs.append(e)
 
         url = data.get("next")
 
         
-    if complaints:
-        complaints.sort(
+    if complaints_docs:
+        complaints_docs.sort(
             key=lambda x: _safe_str(x.get("date_filed")),
             reverse=True
         )
 
-        latest = complaints[0]
+        latest = complaints_docs[0]
         
         # Try to get entry_number from docket entry as fallback
         complaint_doc_no = _safe_str(latest.get("entry_number")) or "미확인"
