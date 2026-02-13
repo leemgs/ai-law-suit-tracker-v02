@@ -156,6 +156,9 @@ def _abs_url(u: str) -> str:
         return u
     if u.startswith("/"):
         return BASE + u
+    # Handle relative RECAP storage paths
+    if u.startswith("pdf/") or u.startswith("gov.uscourts"):
+        return "https://storage.courtlistener.com/recap/" + u        
     return u
 
 
@@ -378,6 +381,8 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
     complaint_doc_no = "미확인"
     complaint_link = ""
     complaint_type = "미확인"
+    extracted_causes = "미확인"
+    extracted_ai_snippet = ""    
     
     url = DOCKET_ENTRIES_URL
     params = {"docket": docket_id, "page_size": 100}
@@ -442,7 +447,7 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
                 # This triggers the PDF reader to get the AI snippets
                 snippet = extract_pdf_text(complaint_link, max_chars=4000)
                 if snippet:
-                    extracted_ai_snippet = extract_ai_training_snippet(snippet)
+                    extracted_ai_snippet = extract_ai_training_snippet(snippet) or ""
                     causes_list = detect_causes(snippet)
                     extracted_causes = ", ".join(causes_list) if causes_list else "미확인"
                 # ----------------------------------------
@@ -472,7 +477,7 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
         complaint_link=complaint_link,
         complaint_type=complaint_type,
         recent_updates=recent_updates,
-        extracted_causes=locals().get('extracted_causes', "미확인"),
-        extracted_ai_snippet=locals().get('extracted_ai_snippet', ""),
+        extracted_causes=extracted_causes,
+        extracted_ai_snippet=extracted_ai_snippet,
     )
 
