@@ -230,15 +230,16 @@ def search_recent_documents(query: str, days: int = 3, max_results: int = 20) ->
         return []
 
     results = data.get("results", [])
-    now = datetime.now(timezone.utc)
-    cutoff = now - timedelta(days=days)
+    # 🔥 FIX: 날짜 기준 비교 (시간 제거)
+    today = datetime.now(timezone.utc).date()
+    cutoff = today - timedelta(days=days)
 
     out = []
     for r in results:
         date_val = _safe_str(r.get("dateFiled") or r.get("date_filed"))
         if date_val:
             try:
-                dt = datetime.fromisoformat(date_val[:10]).replace(tzinfo=timezone.utc)
+                dt = datetime.fromisoformat(date_val[:10]).date()
                 if dt < cutoff:
                     continue
             except Exception:
@@ -305,8 +306,9 @@ def build_complaint_documents_from_hits(
 
     out = []
 
-    now = datetime.now(timezone.utc)
-    cutoff = now - timedelta(days=days)
+    # 🔥 FIX: 날짜 기준 비교 (시간 제거)
+    today = datetime.now(timezone.utc).date()
+    cutoff = today - timedelta(days=days)
 
     for hit in hits:
         did = _pick_docket_id(hit)
@@ -342,7 +344,7 @@ def build_complaint_documents_from_hits(
             date_filed = _safe_str(d.get("date_filed"))[:10]
             if date_filed:
                 try:
-                    dt = datetime.fromisoformat(date_filed).replace(tzinfo=timezone.utc)
+                    dt = datetime.fromisoformat(date_filed).date()
                     if dt < cutoff:
                         continue
                 except Exception:
