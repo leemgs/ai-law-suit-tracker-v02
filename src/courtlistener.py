@@ -412,6 +412,9 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
     complaint_doc_no = "미확인"
     complaint_link = ""
     complaint_type = "미확인"
+    # 🔥 Always try HTML parsing regardless of docket-entry results
+    html_pdf_url = _extract_first_pdf_from_docket_html(docket_id)
+
     extracted_causes = "미확인"
     extracted_ai_snippet = ""    
     
@@ -454,7 +457,8 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
         # --------------------------------------------------
         # NEW LOGIC: Parse HTML to get first PDF link
         # --------------------------------------------------
-        pdf_url = _extract_first_pdf_from_docket_html(docket_id)
+        # Use HTML PDF first if available
+        pdf_url = html_pdf_url
 
         if pdf_url:
             complaint_link = f"[PDF]({pdf_url})"
@@ -470,7 +474,20 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
 
         if not complaint_link:
             complaint_link = _abs_url(latest.get("absolute_url") or "")
-    
+
+    # --------------------------------------------------
+    # 🔥 NEW: Even if docket-entry didn't detect complaint,
+    # fallback to HTML-based PDF detection
+    # --------------------------------------------------
+
+    if not complaint_link and html_pdf_url:
+        complaint_link = f"[PDF]({html_pdf_url})"
+
+        snippet = extract_pdf_text(html_pdf_url, max_chars=4000)
+        if snippet:
+            extracted_ai_snippet = extract_ai_training_snippet(snippet) or ""
+            causes_list = detect_causes(snippet)
+            extracted_causes = ", ".join(causes_list) if causes_list else "미확인"    
     # --------------------------------------------------
 
     return CLCaseSummary(
