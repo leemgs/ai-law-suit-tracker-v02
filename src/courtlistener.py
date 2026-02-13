@@ -150,17 +150,13 @@ def _get(url: str, params: Optional[dict] = None) -> Optional[dict]:
 
 
 def _abs_url(u: str) -> str:
-    if not u:
-        return ""
-    if u.startswith("http"):
-        return u
-    if u.startswith("/"):
-        return BASE + u
-    # Handle relative RECAP storage paths
+    if not u: return ""
+    if u.startswith("http"): return u
+    if u.startswith("/"): return BASE + u
+    # Critical Fix: RECAP storage uses a different base URL for relative paths
     if u.startswith("pdf/") or u.startswith("gov.uscourts"):
-        return "https://storage.courtlistener.com/recap/" + u        
+        return "https://storage.courtlistener.com/recap/" + u
     return u
-
 
 # =====================================================
 # Search
@@ -427,19 +423,15 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
 
         if actual_docs:
 
-            # 최신 Complaint 기준 정렬
-            actual_docs.sort(
-                key=lambda x: _safe_str(x.get("date_filed")),
-                reverse=True
-            )
-
-            first_doc = actual_docs[0]
+            # Look for the primary document (usually document_number 1 or 0)
+            # or the one with a filepath_local available
+            actual_docs.sort(key=lambda x: (not bool(x.get("filepath_local")), x.get("document_number") or "999"))
             
-            doc_num = _safe_str(first_doc.get("document_number"))
-            if doc_num:
-                complaint_doc_no = doc_num
+            best_doc = actual_docs[0]
+            doc_num = _safe_str(best_doc.get("document_number"))
+            if doc_num: complaint_doc_no = doc_num
 
-            pdf_path = first_doc.get("filepath_local") or ""
+            pdf_path = best_doc.get("filepath_local") or ""
             if pdf_path:
                 complaint_link = _abs_url(pdf_path)
                 
