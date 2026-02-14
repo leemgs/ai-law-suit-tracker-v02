@@ -227,6 +227,19 @@ def render_markdown(
                 else:
                     court_display = _esc(c.court)
 
+                # =====================================================
+                # 🔥 NEW: RECAP 테이블 로그 출력
+                # =====================================================
+                print("[DEBUG] RECAP row added:")
+                print(f"        case={c.case_name}")
+                print(f"        docket={c.docket_number}")
+                print(f"        nature={c.nature_of_suit}")
+                print(f"        risk={score}")
+                print(f"        complaint_doc_no={complaint_doc_no}")
+                print(f"        complaint_link={complaint_link}")
+                print(f"        extracted_causes_len={len(c.extracted_causes or '')}")
+                print(f"        extracted_ai_len={len(c.extracted_ai_snippet or '')}")
+
                 lines.append(
                     f"| {_esc(c.status)} | "
                     f"{_mdlink(c.case_name, docket_url)} | "
