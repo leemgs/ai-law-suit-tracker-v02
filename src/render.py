@@ -136,6 +136,7 @@ def render_markdown(
 
     # AI 소송 업데이트 기준 Top3
     if cl_cases:
+        print(f"[DEBUG] '최근 소송 업데이트 기준 Top 3' is printed.")        
         lines.append("## 🧠 최근 소송 업데이트 기준 Top 3\n")
         top_cases = sorted(cl_cases, key=lambda x: x.date_filed, reverse=True)[:3]
         for c in top_cases:
@@ -144,6 +145,7 @@ def render_markdown(
 
     # 뉴스 테이블
     if lawsuits:
+        print(f"[DEBUG] '뉴스/RSS 기반 소송 요약' is printed.")            
         lines.append("## 📰 뉴스/RSS 기반 소송 요약")
         lines.append("| 일자 | 제목 | 소송번호 | 사유 | 위험도 예측 점수 |")
         lines.append(_md_sep(5))
@@ -228,12 +230,14 @@ def render_markdown(
 
         lines.append("## 🔥 RECAP 1/2: 820 Copyright\n")
         if copyright_cases:
+            print(f"[DEBUG] 'RECAP 1/2: 820 Copyright' is printed.")     
             render_case_table(copyright_cases)
         else:
             lines.append("820 사건 없음\n")
 
         lines.append("## 📁 RECAP 2/2: Others\n")
         if other_cases:
+            print(f"[DEBUG] 'RECAP 2/2: Others' is printed.")                
             render_case_table(other_cases)
         else:
             lines.append("Others 사건 없음\n")
