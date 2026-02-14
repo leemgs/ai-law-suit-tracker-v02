@@ -120,9 +120,9 @@ def render_markdown(
     lines.append(f"## 📊 최근 {lookback_days}일 요약\n")
     lines.append("| 구분 | 건수 |")
     lines.append("|---|---|")
-    lines.append(f"| 📰 뉴스 수집 | **{len(lawsuits)}** |")
-    lines.append(f"| ⚖️ RECAP 사건 | **{len(cl_cases)}** |")
-    lines.append(f"| 📄 RECAP 문서 | **{len(cl_docs)}** |\n")
+    lines.append(f"| 📰 외부기사 수집건 | **{len(lawsuits)}** |")
+    lines.append(f"| ⚖️ RECAP  소송제기 | **{len(cl_cases)}** |")
+    lines.append(f"| 📄 RECAP  법원문서 | **{len(cl_docs)}** |\n")
 
     # Nature 통계
     if cl_cases:
