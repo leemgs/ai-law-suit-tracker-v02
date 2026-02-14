@@ -147,7 +147,7 @@ def render_markdown(
     if lawsuits:
         print(f"[DEBUG] '뉴스/RSS 기반 소송 요약' is printed.")            
         lines.append("## 📰 뉴스/RSS 기반 소송 요약")
-        lines.append("| No. | 일자 | 제목 | 소송번호 | 사유 | 위험도 예측 점수 |")
+        lines.append("| No. | 기사일자⬇️ | 제목 | 소송번호 | 사유 | 위험도 예측 점수 |")
         lines.append(_md_sep(6))
 
         for idx, s in enumerate(lawsuits, start=1):
@@ -294,7 +294,7 @@ def render_markdown(
     if cl_docs:
         lines.append("<details>")        
         lines.append("<summary><strong><span style=\"font-size:2.5em; font-weight:bold;\">📄 RECAP: 법원 문서 기반 (Complaint/Petition 우선)</span></strong></summary>\n")
-        lines.append("| No. | 제출일 | 케이스 | 문서유형 | 법원 문서 |")
+        lines.append("| No. | 제출일⬇️ | 케이스 | 문서유형 | 법원 문서 |")
         lines.append(_md_sep(5))
 
         # 제출일 기준 내림차순 정렬
