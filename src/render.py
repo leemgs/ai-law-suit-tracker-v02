@@ -238,21 +238,28 @@ def render_markdown(
         else:
             lines.append("Others 사건 없음\n")
 
-
     # RECAP 법원 문서 (.pdf format)
     if cl_docs:
         lines.append("<details>")        
         lines.append("<summary><strong><span style=\"font-size:2.5em; font-weight:bold;\">📄 RECAP: 법원 문서 기반 (Complaint/Petition 우선)</span></strong></summary>\n")
         lines.append("| 제출일 | 케이스 | 문서유형 | 법원 문서 |")
         lines.append(_md_sep(4))
-        for d in cl_docs:
+
+        # 🔥 제출일 기준 내림차순 정렬
+        sorted_docs = sorted(
+            cl_docs,
+            key=lambda x: x.date_filed or "",
+            reverse=True
+        )
+
+        for d in sorted_docs:
             link = d.document_url or d.pdf_url
             lines.append(
                 f"| {_esc(d.date_filed)} | {_esc(d.case_name)} | "
                 f"{_esc(d.doc_type)} | {_mdlink('Document(PDF)', link)} |"
             )
         lines.append("</details>\n")
-        
+
     # 기사 주소
     if lawsuits:
         lines.append("<details>")
