@@ -1,11 +1,11 @@
-name: hourly-monitor
+name: lawsuit-monitor
 permissions:
   contents: read
   issues: write
 
 on:
   schedule:
-    - cron: "0 * * * *"   # 매시간 정각(UTC)
+    - cron: "0 */2 * * *"   # 매시간 정각(UTC)
   workflow_dispatch: {}
 
 jobs:
