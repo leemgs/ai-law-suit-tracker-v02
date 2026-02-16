@@ -111,6 +111,7 @@ def render_markdown(
     lawsuits: List[Lawsuit],
     cl_docs: List[CLDocument],
     cl_cases: List[CLCaseSummary],
+    recap_doc_count: int,
     lookback_days: int = 3,
 ) -> str:
 
@@ -122,7 +123,7 @@ def render_markdown(
     lines.append("|---|---|")
     lines.append(f"| 📰 외부기사 수집건 | **{len(lawsuits)}** |")
     lines.append(f"| ⚖️ RECAP  소송제기 | **{len(cl_cases)}** |")
-    lines.append(f"| ⚖️ RECAP  법원문서 | **{len(cl_docs)}** |\n")
+    lines.append(f"| ⚖️ RECAP  법원문서 | **{recap_doc_count}** |\n")
 
     # Nature 통계
     if cl_cases:
