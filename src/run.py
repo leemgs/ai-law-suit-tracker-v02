@@ -6,7 +6,14 @@ from zoneinfo import ZoneInfo
 from .fetch import fetch_news
 from .extract import load_known_cases, build_lawsuits_from_news
 from .render import render_markdown
-from .github_issue import find_or_create_issue, create_comment, close_other_daily_issues
+from .github_issue import (
+    find_or_create_issue,
+    create_comment,
+    close_other_daily_issues,
+    get_issue_body,
+    update_issue_body,
+    issue_has_base_snapshot,
+)
 from .slack import post_to_slack
 from .courtlistener import (
     search_recent_documents,
@@ -110,7 +117,41 @@ def main() -> None:
     # 4) GitHub Issue 작업
     issue_no = find_or_create_issue(owner, repo, gh_token, issue_title, issue_label)
     issue_url = f"https://github.com/{owner}/{repo}/issues/{issue_no}"
-    
+ 
+    # =====================================================
+    # 🔥 Base Snapshot 비교 로직
+    # =====================================================
+    current_body = get_issue_body(owner, repo, gh_token, issue_no)
+
+    skipped_count = 0
+
+    if not issue_has_base_snapshot(current_body):
+        # 🕘 최초 실행 → 전체 리포트를 본문으로 저장
+        update_issue_body(owner, repo, gh_token, issue_no, md)
+        print("최초 실행 → Issue 본문을 base snapshot으로 저장")
+    else:
+        # 🕑 재실행 → base snapshot과 비교
+        base_lines = set(current_body.splitlines())
+        new_lines = []
+
+        for line in md.splitlines():
+            if line in base_lines:
+                skipped_count += 1
+                new_lines.append("skip")
+            else:
+                new_lines.append(line)
+
+        summary_block = (
+            "## 🔄 당일 재실행 변경 요약\n\n"
+            f"- 📰 외부 기사 신규: {len(lawsuits)}건\n"
+            f"- ⚖️ RECAP 신규 사건: {docket_case_count}건\n"
+            f"- 📄 RECAP 신규 문서: {recap_doc_count}건\n"
+            f"- 🔁 기존 내용 생략: {skipped_count}건\n\n"
+            "---\n"
+        )
+
+        md = summary_block + "\n".join(new_lines)
+   
     # 이전 날짜 이슈 Close
     closed_nums = close_other_daily_issues(owner, repo, gh_token, issue_label, base_title, issue_title, issue_no, issue_url)
     if closed_nums:
@@ -125,11 +166,11 @@ def main() -> None:
 
     # 5) Slack 요약 전송
     summary_lines = [
-        f"*AI 소송 모니터링 업데이트* ({timestamp})",
-        f"- 언론보도 기반 수집 건수: {len(lawsuits)}건",
-        f"- 법원 사건(RECAP 도켓) 확인 건수: {docket_case_count}건",
-        f"- 법원 문서(RECAP Complaint 등) 확보 건수: {recap_doc_count}건",
-        f"- GitHub Issue (For more details): <{issue_url}|#{issue_no}>",
+        f"*AI 소송 모니터링 업데이트*",
+        f"- 📰 신규 기사: {len(lawsuits)}건",
+        f"- ⚖️ 신규 RECAP 사건: {docket_case_count}건",
+        f"- 🔁 기존 내용 생략: {skipped_count}건",
+        f"- 👉 GitHub Issue: <{issue_url}|#{issue_no}>",
     ]
     
     if cl_docs:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import requests
 from typing import Dict
+from typing import Optional
 
 def _headers(token: str) -> Dict[str, str]:
     return {
@@ -8,6 +9,25 @@ def _headers(token: str) -> Dict[str, str]:
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
     }
+
+
+def get_issue_body(owner: str, repo: str, token: str, issue_number: int) -> str:
+    url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}"
+    r = requests.get(url, headers=_headers(token), timeout=20)
+    r.raise_for_status()
+    return r.json().get("body") or ""
+
+def update_issue_body(owner: str, repo: str, token: str, issue_number: int, body: str) -> None:
+    url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}"
+    r = requests.patch(url, headers=_headers(token), json={"body": body}, timeout=20)
+    r.raise_for_status()
+
+def issue_has_base_snapshot(issue_body: str) -> bool:
+    """
+    최초 생성 시 body는 기본 안내문구.
+    이미 리포트가 본문에 존재하면 base snapshot이 있다고 판단.
+    """
+    return "## 📊 최근" in issue_body
 
 def find_or_create_issue(owner: str, repo: str, token: str, title: str, label: str) -> int:
     url = f"https://api.github.com/repos/{owner}/{repo}/issues"
