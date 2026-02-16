@@ -8,7 +8,7 @@ from .extract import load_known_cases, build_lawsuits_from_news
 from .render import render_markdown
 from .github_issue import find_or_create_issue, create_comment, close_other_daily_issues
 from .github_issue import list_comments
-from .slack import post_to_slack
+from .slack import post_to_slack, post_to_slack_with_color
 from urllib.parse import urlparse, urlunparse
 import re
 from .courtlistener import (
@@ -233,8 +233,16 @@ def main() -> None:
             name = getattr(d, 'case_name', 'Unknown Case')
             summary_lines.append(f"  • {date} | {name}")
     
-    post_to_slack(slack_webhook, "\n".join(summary_lines))
-    print("Slack 전송 완료")
+    if total_new == 0:
+        post_to_slack_with_color(
+            slack_webhook,
+            "\n".join(summary_lines),
+            "#ff0000"
+        )
+        print("Slack 전송 완료 (RED - 신규 없음)")
+    else:
+        post_to_slack(slack_webhook, "\n".join(summary_lines))
+        print("Slack 전송 완료")
 
 if __name__ == "__main__":
     main()
