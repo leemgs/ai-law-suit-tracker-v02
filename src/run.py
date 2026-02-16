@@ -80,7 +80,18 @@ def main() -> None:
     cl_docs = list(merged_docs.values())
 
     docket_case_count = len(cl_cases)
-    recap_doc_count = len(cl_docs)
+    
+    # =====================================================
+    # 🔥 FIX: RECAP 문서 건수 계산 방식 수정
+    # 기존: len(cl_docs)
+    # 문제: HTML fallback 등으로 CLCaseSummary에만 complaint_link가 있고
+    #       CLDocument가 생성되지 않는 경우 KPI가 0으로 나옴
+    # 해결: CLCaseSummary 기준으로 complaint_link 존재 여부 카운트
+    # =====================================================
+    recap_doc_count = sum(
+        1 for c in cl_cases
+        if (getattr(c, "complaint_link", "") or "").strip()
+    )
 
     # 3) 렌더링
     md = render_markdown(lawsuits, cl_docs, cl_cases, lookback_days=lookback_days)
