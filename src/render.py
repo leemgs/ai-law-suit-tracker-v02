@@ -268,7 +268,7 @@ def render_markdown(
                 # =====================================================
                 nature_display = _esc(c.nature_of_suit)
                 if (c.nature_of_suit or "").strip() == "820 Copyright":
-                    nature_display = '<span style="color:red"><strong>820 Copyright</strong></span>'
+                    nature_display = '⚠️**820 Copyright**'
 
                 lines.append(
                     f"| {idx} | "
