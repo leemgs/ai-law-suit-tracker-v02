@@ -69,3 +69,25 @@ def comment_and_close_issue(owner: str, repo: str, token: str, issue_number: int
     rc.raise_for_status()
     # 그 다음 이슈 Close
     close_issue(owner, repo, token, issue_number)
+
+
+
+ 
+# =========================================================
+# NEW: Issue 댓글 조회 (base snapshot 확보용)
+# =========================================================
+def list_comments(owner: str, repo: str, token: str, issue_number: int) -> list[dict]:
+    url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/comments"
+    r = requests.get(url, headers=_headers(token), timeout=20)
+    r.raise_for_status()
+    return r.json() or []
+
+
+def get_first_comment_body(owner: str, repo: str, token: str, issue_number: int) -> str | None:
+    comments = list_comments(owner, repo, token, issue_number)
+    if not comments:
+        return None
+
+    # GitHub API는 오래된 순 정렬
+    return comments[0].get("body")
+

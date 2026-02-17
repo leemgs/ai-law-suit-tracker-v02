@@ -7,6 +7,7 @@ from .fetch import fetch_news
 from .extract import load_known_cases, build_lawsuits_from_news
 from .render import render_markdown
 from .github_issue import find_or_create_issue, create_comment, close_other_daily_issues
+from .github_issue import list_comments, get_first_comment_body
 from .slack import post_to_slack
 from .courtlistener import (
     search_recent_documents,
@@ -110,7 +111,92 @@ def main() -> None:
     # 4) GitHub Issue 작업
     issue_no = find_or_create_issue(owner, repo, gh_token, issue_title, issue_label)
     issue_url = f"https://github.com/{owner}/{repo}/issues/{issue_no}"
-    
+   
+
+    # =========================================================
+    # 🔥 Base Snapshot 비교 로직
+    # =========================================================
+    comments = list_comments(owner, repo, gh_token, issue_no)
+    first_run_today = len(comments) == 0
+
+    base_article_urls = set()
+    base_dockets = set()
+
+    if not first_run_today:
+        base_body = get_first_comment_body(owner, repo, gh_token, issue_no) or ""
+
+        import re
+
+        # 기사 URL 추출
+        base_article_urls = set(re.findall(r"\((https?://[^\)]+)\)", base_body))
+
+        # docket number 패턴 추출
+        base_dockets = set(
+            re.findall(r"\b\d{1,2}:\d{2}-[a-z]{2}-\d+\b", base_body, flags=re.I)
+        )
+
+    # =========================================================
+    # Markdown 비교 후 skip 처리
+    # =========================================================
+    new_article_count = 0
+    new_docket_count = 0
+
+    if not first_run_today:
+        processed_lines = []
+        for line in md.split("\n"):
+
+            # 헤더/구분선은 항상 유지
+            if line.startswith("|---") or line.startswith("| No."):
+                processed_lines.append(line)
+                continue
+
+            # 기사 URL 포함 행
+            found_urls = [u for u in base_article_urls if u in line]
+            found_dockets = [d for d in base_dockets if d in line]
+
+            if found_urls:
+                # 기존 기사 → skip
+                cells = line.split("|")
+                if len(cells) > 2:
+                    new_line = "|".join(
+                        [cells[0]] + [" skip "] * (len(cells) - 2) + [cells[-1]]
+                    )
+                    processed_lines.append(new_line)
+                else:
+                    processed_lines.append(line)
+                continue
+
+            if found_dockets:
+                cells = line.split("|")
+                if len(cells) > 2:
+                    new_line = "|".join(
+                        [cells[0]] + [" skip "] * (len(cells) - 2) + [cells[-1]]
+                    )
+                    processed_lines.append(new_line)
+                else:
+                    processed_lines.append(line)
+                continue
+
+            # 신규 데이터 카운트
+            if "http" in line:
+                new_article_count += 1
+            if re.search(r"\b\d{1,2}:\d{2}-[a-z]{2}-\d+\b", line, flags=re.I):
+                new_docket_count += 1
+
+            processed_lines.append(line)
+
+        md = "\n".join(processed_lines)
+
+        summary_header = (
+            "### 자료 중복 제거 결과 요약:\n"
+            f"1). 외부 기사 기반 소송 정보: 기존 {len(base_article_urls)}건 (base snapshot) "
+            f"+ 신규 {new_article_count}건 = 총 {len(base_article_urls) + new_article_count}건\n"
+            f"2). RECAP: 기존 {len(base_dockets)}건 (base snapshot) "
+            f"+ 신규 {new_docket_count}건 = 총 {len(base_dockets) + new_docket_count}건\n\n"
+        )
+
+        md = summary_header + md
+ 
     # 이전 날짜 이슈 Close
     closed_nums = close_other_daily_issues(owner, repo, gh_token, issue_label, base_title, issue_title, issue_no, issue_url)
     if closed_nums:
