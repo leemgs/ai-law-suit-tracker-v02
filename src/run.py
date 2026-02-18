@@ -277,19 +277,21 @@ def main() -> None:
         # -------------------------
         # Summary 생성
         # -------------------------
-        def format_delta(n: int) -> str:
-            if n > 0:
-                return f"🔺+{n}"
-            elif n < 0:
-                return f"🔻{n}"
-            else:
-                return "➖0"
+        base_news = len(base_article_set)
+        base_cases = len(base_docket_set)
+
+        dup_news = total_article_count - new_article_count
+        dup_cases = total_docket_count - new_docket_count
 
         summary_header = (
             "### 중복 제거 요약:\n"
             "🔁 Dedup Summary\n"
-            f"└ 📰 {len(base_article_set)} (base snapshot) → {format_delta(new_article_count)} = {total_article_count}\n"
-            f"└ ⚖ {len(base_docket_set)} (base snapshot) → {format_delta(new_docket_count)} = {total_docket_count}\n\n"
+            f"└ 📰 {base_news} (Base snapshot), "
+            f"{dup_news} (Dup), "
+            f"{new_article_count} (New)\n"
+            f"└ ⚖ {base_cases} (Base snapshot), "
+            f"{dup_cases} (Dup), "
+            f"{new_docket_count} (New)\n\n"
         )
 
         md = summary_header + current_md
