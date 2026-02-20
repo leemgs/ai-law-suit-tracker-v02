@@ -211,7 +211,7 @@ def main() -> None:
         current_md = md
 
         # 외부 기사 처리
-        news_section = extract_section(current_md, "## 📰 외부 기사 기반 소송 정보")
+        news_section = extract_section(current_md, "## 📰 Cases")
         headers, rows, table_meta = parse_table(news_section)
 
         new_article_count = 0
@@ -254,8 +254,8 @@ def main() -> None:
             new_news_section = "\n".join(new_lines)
             current_md = current_md.replace(news_section, new_news_section)
 
-        # RECAP 처리
-        recap_section = extract_section(current_md, "## ⚖️ RECAP")
+        # Cases 처리
+        recap_section = extract_section(current_md, "## ⚖️ Cases")
         headers, rows, table_meta = parse_table(recap_section)
 
         new_docket_count = 0
