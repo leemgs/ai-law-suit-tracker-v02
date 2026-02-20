@@ -196,7 +196,7 @@ def _validate_pdf_url(pdf_url: str) -> bool:
         debug_log(f"HEAD status={r.status_code}")
 
         if r.status_code != 200:
-            print(f"[ERROR] PDF HEAD failed status={r.status_code}")
+            debug_log(f"[ERROR] PDF HEAD failed status={r.status_code}")
             return False
 
         content_type = r.headers.get("Content-Type", "")
@@ -206,13 +206,13 @@ def _validate_pdf_url(pdf_url: str) -> bool:
         debug_log(f"Content-Length={content_length}")
 
         if "pdf" not in content_type.lower():
-            print("[ERROR] HEAD response is not PDF")
+            debug_log("[ERROR] HEAD response is not PDF")
             return False
 
         return True
 
     except Exception as e:
-        print(f"[ERROR] HEAD request exception: {type(e).__name__}: {e}")
+        debug_log(f"[ERROR] HEAD request exception: {type(e).__name__}: {e}")
         return False
 
 
@@ -288,7 +288,7 @@ def _extract_first_pdf_from_docket_html(docket_id: int) -> str:
 # =====================================================
 
 def search_recent_documents(query: str, days: int = 3, max_results: int = 50) -> List[dict]:
-    print(f"CourtListener 검색 중: '{query}'")
+    debug_log(f"CourtListener 검색 중: '{query}'")
     debug_log(f"search_recent_documents query='{query}' days={days}")   
 
 #                          문서단위 검색 vs. 사건단위 검색
@@ -334,10 +334,10 @@ def search_recent_documents(query: str, days: int = 3, max_results: int = 50) ->
             try:
                 dt = datetime.fromisoformat(date_val[:10]).date()
                 if dt < cutoff:
-                    print(f"[DEBUG] filtered by date: {dt} < {cutoff}")                    
+                    debug_log(f"[DEBUG] filtered by date: {dt} < {cutoff}")                    
                     continue
             except Exception as e:
-                print(f"[DEBUG] date parse error: {e}")
+                debug_log(f"[DEBUG] date parse error: {e}")
                 pass
         out.append(r)
 
@@ -349,7 +349,7 @@ def search_recent_documents(query: str, days: int = 3, max_results: int = 50) ->
                 m = re.search(r"/dockets/(\d+)/", docket_url)
                 if m:
                     hit["docket_id"] = int(m.group(1))
-                    print(f"[DEBUG] injected docket_id={hit['docket_id']} from docket URL")
+                    debug_log(f"[DEBUG] injected docket_id={hit['docket_id']} from docket URL")
 
     return out
 
@@ -422,7 +422,7 @@ def build_complaint_documents_from_hits(
     days: int = 3
 ) -> List[CLDocument]:
 
-    print(f"[DEBUG] build_complaint_documents_from_hits hits={len(hits)} days={days}")
+    debug_log(f"[DEBUG] build_complaint_documents_from_hits hits={len(hits)} days={days}")
     out = []
 
     # 🔥 FIX: 날짜 기준 비교 (시간 제거)
@@ -432,7 +432,7 @@ def build_complaint_documents_from_hits(
     for hit in hits:
         did = _pick_docket_id(hit)
         if not did:
-            print("[DEBUG] no docket_id in hit")         
+            debug_log("[DEBUG] no docket_id in hit")         
             continue
 
         docket = _get(DOCKET_URL.format(id=did)) or {}
@@ -481,8 +481,8 @@ def build_complaint_documents_from_hits(
                 snippet = extract_pdf_text(html_pdf_url, max_chars=4500)
 
                 if not snippet:
-                    print("[ERROR] PDF parsing FAILED (HTML fallback)")
-                    print(f"[ERROR] URL: {html_pdf_url}")
+                    debug_log(f"[ERROR] PDF parsing FAILED (HTML fallback)")
+                    debug_log(f"[ERROR] URL: {html_pdf_url}")
                 else:
                     debug_log(f"PDF parsing SUCCESS length={len(snippet)}")
 
@@ -537,12 +537,12 @@ def build_complaint_documents_from_hits(
             if pdf_url and _validate_pdf_url(pdf_url):
                 snippet = extract_pdf_text(pdf_url, max_chars=3000)
             else:
-                print("[ERROR] PDF validation failed — skipping extraction")
-                print(f"[ERROR] URL: {pdf_url}")
+                debug_log("[ERROR] PDF validation failed — skipping extraction")
+                debug_log(f"[ERROR] URL: {pdf_url}")
 
             if pdf_url and not snippet:
-                print("[ERROR] PDF parsing FAILED (RECAP)")
-                print(f"[ERROR] URL: {pdf_url}")
+                debug_log("[ERROR] PDF parsing FAILED (RECAP)")
+                debug_log(f"[ERROR] URL: {pdf_url}")
             elif snippet:
                 debug_log(f"PDF parsing SUCCESS length={len(snippet)}")
 
@@ -695,8 +695,8 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
         if _validate_pdf_url(complaint_link):
             snippet = extract_pdf_text(complaint_link, max_chars=4000)
         else:
-            print("[ERROR] Complaint PDF validation failed")
-            print(f"[ERROR] complaint_link={complaint_link}")
+            debug_log("[ERROR] Complaint PDF validation failed")
+            debug_log(f"[ERROR] complaint_link={complaint_link}")
 
         debug_log(f"PDF snippet length={len(snippet) if snippet else 0}")
 
@@ -706,12 +706,12 @@ def build_case_summary_from_docket_id(docket_id: int) -> Optional[CLCaseSummary]
             debug_log("===== PDF TEXT PREVIEW END =====")
         else:
             debug_log("PDF text extraction returned EMPTY STRING")
-            print("[ERROR] PDF text extraction FAILED")
-            print(f"[ERROR] complaint_link={complaint_link}")
-            print("[ERROR] Possible causes:")
-            print("  - 403 Access denied")
-            print("  - Non-PDF response")
-            print("  - Corrupted file")
+            debug_log("[ERROR] PDF text extraction FAILED")
+            debug_log(f"[ERROR] complaint_link={complaint_link}")
+            debug_log("[ERROR] Possible causes:")
+            debug_log("  - 403 Access denied")
+            debug_log("  - Non-PDF response")
+            debug_log("  - Corrupted file")
 
         debug_log(f"PDF snippet length={len(snippet) if snippet else 0}")        
         if snippet:

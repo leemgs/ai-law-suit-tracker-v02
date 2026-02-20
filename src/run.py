@@ -41,7 +41,7 @@ def main() -> None:
     run_ts_kst = now_kst.strftime("%Y-%m-%d %H:%M")
     issue_day_kst = now_kst.strftime("%Y-%m-%d")
     issue_title = f"{base_title} ({issue_day_kst})"
-    print(f"KST 기준 실행시각: {run_ts_kst}")
+    debug_log(f"KST 기준 실행시각: {run_ts_kst}")
     
     issue_label = os.environ.get("ISSUE_LABEL", "ai-lawsuit-monitor")
 
@@ -108,9 +108,9 @@ def main() -> None:
     )    
     md = f"### 실행 시각(KST): {run_ts_kst}\n\n" + md
     
-    print(f"📊 수집 및 분석 완료 (최근 {lookback_days}일)")
-    print(f"  ├ 📰 외부 소송 기사: {len(lawsuits)}건")
-    print(f"  └ ⚖ CourtListener(RECAP): {docket_case_count}건 (문서 {recap_doc_count}건)")
+    debug_log(f"📊 수집 및 분석 완료 (최근 {lookback_days}일)")
+    debug_log(f"  ├ 📰 외부 소송 기사: {len(lawsuits)}건")
+    debug_log(f"  └ ⚖ CourtListener(RECAP): {docket_case_count}건 (문서 {recap_doc_count}건)")
 
     debug_log("===== REPORT PREVIEW (First 1000 chars) =====")
     debug_log(md[:1000])
@@ -306,14 +306,14 @@ def main() -> None:
     # 이전 날짜 이슈 Close
     closed_nums = close_other_daily_issues(owner, repo, gh_token, issue_label, base_title, issue_title, issue_no, issue_url)
     if closed_nums:
-        print(f"이전 날짜 이슈 자동 Close: {closed_nums}")
+        debug_log(f"이전 날짜 이슈 자동 Close: {closed_nums}")
     
     # KST 기준 타임스탬프
     timestamp = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M KST")
 
     comment_body = f"\n\n{md}"
     create_comment(owner, repo, gh_token, issue_no, comment_body)
-    print(f"Issue #{issue_no} 댓글 업로드 완료")
+    debug_log(f"Issue #{issue_no} 댓글 업로드 완료")
 
     # 5) Slack 요약 전송
     # ============================================
@@ -409,9 +409,9 @@ def main() -> None:
                 slack_lines.append(f"• {date} | {name}")
     try:
         post_to_slack(slack_webhook, "\n".join(slack_lines))
-        print("Slack 전송 완료")
+        debug_log("Slack 전송 완료")
     except Exception as e:
-        print("Slack 전송 실패:", str(e))
+        debug_log(f"Slack 전송 실패: {e}")
         
 if __name__ == "__main__":
     main()
