@@ -177,8 +177,8 @@ def render_markdown(
 
     # 뉴스 테이블
     if lawsuits:
-        debug_log("'외부 기사 기반 소송 정보' is printed.")            
-        lines.append("## 📰 외부 기사 기반 소송 정보")
+        debug_log("'News' is printed.")            
+        lines.append("## 📰 News")
         lines.append("| No. | 기사일자⬇️ | 제목 | 소송번호 | 소송사유 | 위험도 예측 점수 |")
         lines.append(_md_sep(6))
 
@@ -213,7 +213,7 @@ def render_markdown(
             if d.docket_id:
                 doc_map[d.docket_id] = d
         
-        lines.append("## ⚖️ RECAP\n")
+        lines.append("## ⚖️ Cases (Courtlistener+RECAP)\n")
         lines.append(
             "| No. | 상태 | 케이스명 | 도켓번호 | Nature | 위험도 | "
             "소송이유 | AI학습관련 핵심주장 | 법적 근거 | 담당판사 | 법원 | "
@@ -301,7 +301,7 @@ def render_markdown(
     # RECAP 법원 문서 (.pdf format)
     if cl_docs:
         lines.append("<details>")        
-        lines.append("<summary><strong><span style=\"font-size:2.5em; font-weight:bold;\">📄 RECAP: 법원 문서 기반 (Complaint/Petition 우선)</span></strong></summary>\n")
+        lines.append("<summary><strong><span style=\"font-size:2.5em; font-weight:bold;\">📄 Cases: 법원 문서 기반 (Complaint/Petition 우선)</span></strong></summary>\n")
         lines.append("| No. | 제출일⬇️ | 케이스 | 문서유형 | 법원 문서 |")
         lines.append(_md_sep(5))
 
@@ -324,7 +324,7 @@ def render_markdown(
     # 기사 주소
     if lawsuits:
         lines.append("<details>")
-        lines.append("<summary><strong><span style=\"font-size:2.5em; font-weight:bold;\">📰 기사 주소</span></strong></summary>\n")
+        lines.append("<summary><strong><span style=\"font-size:2.5em; font-weight:bold;\">📰 News Website</span></strong></summary>\n")
         for s in lawsuits:
             lines.append(f"### {_esc(s.article_title or s.case_title)}")
             for u in s.article_urls:
