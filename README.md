@@ -1,4 +1,4 @@
-# AI Lawsuit Monitor (CourtListener RECAP & News Extractor)
+# AI Lawsuit Monitor (CourtListener/RECAP & News Extractor)
 
 AI 모델 학습을 위한 데이터 무단 사용 및 관련 저작권 소송을 추적하고 분석하는 자동화 도구입니다. 최근 3일 내의 소송 정보를 **CourtListener(RECAP Archive)**와 **뉴스(RSS)**에서 수집하여 GitHub Issue와 Slack으로 통합 리포트를 제공합니다.
 
