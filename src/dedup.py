@@ -100,23 +100,16 @@ def apply_deduplication(md: str, comments: List[dict]) -> str:
 
         header_line, separator_line = n_table_meta
         non_skip_rows = []
-        skip_rows = []
 
         for r in n_rows:
             url = extract_article_url(r[title_idx])
             if url in base_article_set:
-                new_row = []
-                for i, col in enumerate(r):
-                    if i in (no_idx, date_idx, title_idx):
-                        new_row.append(col)
-                    else:
-                        new_row.append("skip")
-                skip_rows.append(new_row)
+                debug_log(f"Skipping duplicate News: {r[title_idx]} ({url})")
             else:
                 non_skip_rows.append(r)
                 new_article_count += 1
         
-        final_rows = non_skip_rows + skip_rows
+        final_rows = non_skip_rows
         new_lines = [header_line, separator_line]
         for row_idx, r in enumerate(final_rows, start=1):
             if no_idx is not None:
@@ -141,23 +134,16 @@ def apply_deduplication(md: str, comments: List[dict]) -> str:
 
         header_line, separator_line = c_table_meta
         non_skip_rows = []
-        skip_rows = []
 
         for r in c_rows:
             docket = r[docket_idx]
             if docket in base_docket_set:
-                new_row = []
-                for i, col in enumerate(r):
-                    if i in (no_idx, status_idx, case_idx, docket_idx):
-                        new_row.append(col)
-                    else:
-                        new_row.append("skip")
-                skip_rows.append(new_row)
+                debug_log(f"Skipping duplicate Case: {r[case_idx]} ({docket})")
             else:
                 non_skip_rows.append(r)
                 new_docket_count += 1
 
-        final_rows = non_skip_rows + skip_rows
+        final_rows = non_skip_rows
         new_lines = [header_line, separator_line]
         for row_idx, r in enumerate(final_rows, start=1):
             if no_idx is not None:
