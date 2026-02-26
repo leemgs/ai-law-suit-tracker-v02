@@ -134,7 +134,7 @@ def render_markdown(
     lines: List[str] = []
 
     # KPI (간결 텍스트 요약)
-    lines.append(f"## 📊 최근 {lookback_days}일 요약")
+    lines.append(f"## 📊 최근 {lookback_days}일 규제 동향 요약")
     lines.append(f"└ 📰 News: {len(lawsuits)}")
     lines.append(f"└ ⚖ Cases: {len(cl_cases)} (Docs: {recap_doc_count})\n")
 
@@ -182,7 +182,7 @@ def render_markdown(
             lines.append("")
 
     # 뉴스 테이블
-    lines.append("## 📰 News")
+    lines.append("## 📰 AI Regulation News")
     if lawsuits:
         debug_log("'News' is printed.")            
         lines.append("| No. | 기사일자⬇️ | 제목 | 소송번호 | 조건 (주요 키워드) | 소송사유 | 위험도 예측 점수 |")

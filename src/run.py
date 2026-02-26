@@ -112,16 +112,6 @@ def main() -> None:
         recap_doc_count,
         lookback_days=lookback_days,
     )    
-    md = f"### 실행 시각(KST): {run_ts_kst}\n\n" + md
-    
-    debug_log(f"📊 수집 및 분석 완료 (최근 {lookback_days}일)")
-    debug_log(f"  ├ News: {len(lawsuits)}건")
-    debug_log(f"  └ Cases (CourtListener+RECAP): {docket_case_count}건 (문서 {recap_doc_count}건)")
-
-    debug_log("===== REPORT PREVIEW (First 1000 chars) =====")
-    debug_log(md[:1000])
-    debug_log(f"Report full length: {len(md)}")
-
     # 4) GitHub Issue 작업
     issue_no = find_or_create_issue(owner, repo, gh_token, issue_title, issue_label)
     issue_url = f"https://github.com/{owner}/{repo}/issues/{issue_no}"
@@ -132,12 +122,23 @@ def main() -> None:
     # =========================================================
     comments = list_comments(owner, repo, gh_token, issue_no)
     md = apply_deduplication(md, comments)
+    
+    # 실행 시각(KST)을 최상단에 배치 (중복 제거 요약보다 위에 오도록)
+    md = f"### 실행 시각(KST): {run_ts_kst}\n\n" + md
 
     # 이전 날짜 이슈 Close
     closed_nums = close_other_daily_issues(owner, repo, gh_token, issue_label, base_title, issue_title, issue_no, issue_url)
     if closed_nums:
         debug_log(f"이전 날짜 이슈 자동 Close: {closed_nums}")
     
+    debug_log(f"📊 수집 및 분석 완료 (최근 {lookback_days}일)")
+    debug_log(f"  ├ News: {len(lawsuits)}건")
+    debug_log(f"  └ Cases (CourtListener+RECAP): {docket_case_count}건 (문서 {recap_doc_count}건)")
+
+    debug_log("===== REPORT PREVIEW (First 1000 chars) =====")
+    debug_log(md[:1000])
+    debug_log(f"Report full length: {len(md)}")
+
     # KST 기준 타임스탬프
     timestamp = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M KST")
 

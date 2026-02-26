@@ -67,8 +67,8 @@ def apply_deduplication(md: str, comments: List[dict]) -> str:
     for comment in comments:
         body = comment.get("body") or ""
         
-        # News 처리
-        news_section_base = extract_section(body, "## 📰 News")
+        # News 처리 (이전 이름 '## 📰 News'와 새 이름 '## 📰 AI Regulation News' 모두 지원)
+        news_section_base = extract_section(body, "## 📰 AI Regulation News") or extract_section(body, "## 📰 News")
         h_news, r_news, _ = parse_table(news_section_base)
         if "제목" in h_news:
             idx = h_news.index("제목")
@@ -85,9 +85,9 @@ def apply_deduplication(md: str, comments: List[dict]) -> str:
             for r in r_cases:
                 base_docket_set.add(r[idx])
 
-    # 2) 현재 Markdown 처리 (News)
+    # 2) 현재 Markdown 처리 (News - 새 이름 사용)
     current_md = md
-    news_section = extract_section(current_md, "## 📰 News")
+    news_section = extract_section(current_md, "## 📰 AI Regulation News")
     n_headers, n_rows, n_table_meta = parse_table(news_section)
 
     new_article_count = 0
@@ -163,15 +163,18 @@ def apply_deduplication(md: str, comments: List[dict]) -> str:
     dup_news = total_article_count - new_article_count
     dup_cases = total_docket_count - new_docket_count
 
+    new_news_label = f"**{new_article_count} (New)**" + (" 🔴" if new_article_count > 0 else "")
+    new_cases_label = f"**{new_docket_count} (New)**" + (" 🔴" if new_docket_count > 0 else "")
+
     summary_header = (
         "### 중복 제거 요약:\n"
         "🔁 Dedup Summary\n"
         f"└ News {base_news} (Baseline): "
         f"{dup_news} (Dup), "
-        f"{new_article_count} (New)\n"
+        f"{new_news_label}\n"
         f"└ Cases {base_cases} (Baseline): "
         f"{dup_cases} (Dup), "
-        f"{new_docket_count} (New)\n\n"
+        f"{new_cases_label}\n\n"
     )
 
     return summary_header + current_md
