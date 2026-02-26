@@ -39,7 +39,7 @@ Repository → Settings → Secrets and variables → Actions → Variables 탭
 |---|---|---|
 | `COURTLISTENER_TOKEN` | (선택 권장) | CourtListener API v4 인증 토큰 |
 | `LOOKBACK_DAYS` | `3` | 며칠 전까지의 정보를 수집할지 설정 |
-| `ISSUE_TITLE_BASE` | `AI 불법/무단 학습...` | 생성될 이슈의 기본 제목 |
+| `ISSUE_TITLE_BASE` | `AI 소송 모니터링` | 생성될 이슈의 기본 제목 |
 | `ISSUE_LABEL` | `ai-lawsuit-monitor` | 이슈에 부여할 라벨 이름 |
 | `SHOW_DOCKET_CANDIDATES`| `0` | 1 설정 시 매칭이 불확실한 도켓 후보군 표시 |
 | `COLLAPSE_LONG_CELLS` | `0` | 1 설정 시 도켓 업데이트 등 긴 셀을 접음 |
