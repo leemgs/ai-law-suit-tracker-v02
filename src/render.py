@@ -182,7 +182,7 @@ def render_markdown(
             lines.append("")
 
     # 뉴스 테이블
-    lines.append("## 📰 AI Regulation News")
+    lines.append("## 📰 AI Suit News")
     if lawsuits:
         debug_log("'News' is printed.")            
         lines.append("| No. | 기사일자⬇️ | 제목 | 소송번호 | 조건 (주요 키워드) | 소송사유 | 위험도 예측 점수 |")
