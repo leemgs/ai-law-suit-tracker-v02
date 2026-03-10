@@ -67,8 +67,10 @@ def apply_deduplication(md: str, comments: List[dict]) -> str:
     for comment in comments:
         body = comment.get("body") or ""
         
-        # News 처리 (이전 이름 '## 📰 News'와 새 이름 '## 📰 AI Suit News' 모두 지원)
-        news_section_base = extract_section(body, "## 📰 AI Suit News") or extract_section(body, "## 📰 News")
+        # News 처리 (이전 이름들 모두 지원)
+        news_section_base = extract_section(body, "## 📰 AI Suit News") or \
+                            extract_section(body, "## 📰 AI Regulation News") or \
+                            extract_section(body, "## 📰 News")
         h_news, r_news, _ = parse_table(news_section_base)
         if "제목" in h_news:
             idx = h_news.index("제목")
@@ -202,7 +204,9 @@ def generate_consolidated_report(comments: List[dict]) -> str:
         body = comment.get("body") or ""
 
         # 1) News 파이싱
-        news_section = extract_section(body, "## 📰 AI Regulation News") or extract_section(body, "## 📰 News")
+        news_section = extract_section(body, "## 📰 AI Suit News") or \
+                       extract_section(body, "## 📰 AI Regulation News") or \
+                       extract_section(body, "## 📰 News")
         h_news, r_news, meta_news = parse_table(news_section)
         if h_news and "제목" in h_news:
             title_idx = h_news.index("제목")
@@ -233,7 +237,7 @@ def generate_consolidated_report(comments: List[dict]) -> str:
     lines = ["## 📑 당일 소송건들 통합 정리 자료\n"]
 
     # News 통합 출력
-    lines.append("### 📰 통합 AI Regulation News")
+    lines.append("### 📰 통합 AI Suit News")
     if unique_news:
         lines.append(news_header_line)
         lines.append(news_sep_line)
