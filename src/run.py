@@ -190,19 +190,19 @@ def main() -> None:
 
     slack_lines = []
 
-    slack_lines.append("📊 AI 소송 모니터링")
-    slack_lines.append(f"🕒 {timestamp}")
+    slack_lines.append(":막대_차트: AI 소송 모니터링")
+    slack_lines.append(f":시계_3시: {timestamp}")
     slack_lines.append("")
 
     # 🔁 Dedup Summary
     if slack_dedup_news and slack_dedup_cases:
-        slack_lines.append("🔁 Dedup Summary")
+        slack_lines.append(":반복: Dedup Summary")
         slack_lines.append(f"└ News {slack_dedup_news}")
         slack_lines.append(f"└ Cases {slack_dedup_cases}")
         slack_lines.append("")
 
     # 📈 Collection Status
-    slack_lines.append("📈 Collection Status")
+    slack_lines.append(":상승세인_차트: Collection Status")
     slack_lines.append(f"└ News: {len(lawsuits)}")
     slack_lines.append(
         f"└ Cases: {docket_case_count} (Docs: {recap_doc_count})"
@@ -210,48 +210,28 @@ def main() -> None:
     slack_lines.append("")
 
     # 🔗 GitHub
-    slack_lines.append(f"🔗 GitHub: <{issue_url}|#{issue_no}>")
+    slack_lines.append(f":링크: GitHub: <{issue_url}|#{issue_no}>")
 
-    # 🆕 최신 RECAP 문서
-    if cl_docs:
-        top = sorted(
-            cl_docs,
-            key=lambda x: getattr(x, "date_filed", ""),
-            reverse=True,
-        )[:3]
+    # 🆕 최신 RECAP 문서 (820 Copyright) - Top 3
+    copyright_cases = [c for c in cl_cases if c.nature_of_suit and "820" in c.nature_of_suit]
+    top_cases = sorted(
+        copyright_cases,
+        key=lambda x: x.recent_updates if x.recent_updates != "미확인" else "",
+        reverse=True
+    )[:3]
 
+    if top_cases:
         slack_lines.append("")
-        slack_lines.append("🆕 최신 RECAP 문서")
+        slack_lines.append(":새_항목: 최신 RECAP 문서 (820 Copyright)")
 
-        for d in top:
-            date = getattr(d, "date_filed", "N/A")
-            name = getattr(d, "case_name", "Unknown Case")
-            docket_id = getattr(d, "docket_id", None) 
-            absolute_url = getattr(d, "absolute_url", None)
-
-            if absolute_url:
-                # 가장 정확한 URL (slug 포함)
-                docket_url = absolute_url
-                if not docket_url.endswith("/"):
-                    docket_url += "/"
-
-                slack_lines.append(
-                    f"• {date} | <{docket_url}|{name}>"
-                )
-            elif docket_id:
-                # slug 생성 (utils의 공통 함수 사용)
-                slug = slugify_case_name(name)
-
-                docket_url = (
-                    f"https://www.courtlistener.com/docket/"
-                    f"{docket_id}/{slug}/"
-                )
-
-                slack_lines.append(
-                    f"• {date} | <{docket_url}|{name}>"
-                )
-            else:
-                slack_lines.append(f"• {date} | {name}")
+        for c in top_cases:
+            date = c.recent_updates if c.recent_updates != "미확인" else "N/A"
+            name = c.case_name
+            # slug 생성 (utils의 공통 함수 사용)
+            slug = slugify_case_name(name)
+            docket_url = f"https://www.courtlistener.com/docket/{c.docket_id}/{slug}/"
+            
+            slack_lines.append(f"• {date} | <{docket_url}|{name}>")
     try:
         post_to_slack(slack_webhook, "\n".join(slack_lines))
         debug_log(f"Slack 전송 완료")
