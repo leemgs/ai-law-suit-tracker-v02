@@ -172,7 +172,7 @@ def main() -> None:
             # New 수치가 0보다 크면 강조 (Bolding + 🔴)
             slack_dedup_news = re.sub(
                 r"(\d+)\s+\(New\)",
-                lambda m: f"*{m.group(1)} (New)*" + (" 🔴" if int(m.group(1)) > 0 else ""),
+                lambda m: f"*{m.group(1)} (New)*" + (" :red_circle:" if int(m.group(1)) > 0 else ""),
                 line
             )
 
@@ -182,7 +182,7 @@ def main() -> None:
             line = line.replace("**", "").replace(" 🔴", "")
             slack_dedup_cases = re.sub(
                 r"(\d+)\s+\(New\)",
-                lambda m: f"*{m.group(1)} (New)*" + (" 🔴" if int(m.group(1)) > 0 else ""),
+                lambda m: f"*{m.group(1)} (New)*" + (" :red_circle:" if int(m.group(1)) > 0 else ""),
                 line
             )
 
@@ -190,19 +190,19 @@ def main() -> None:
 
     slack_lines = []
 
-    slack_lines.append(":막대_차트: AI 소송 모니터링")
-    slack_lines.append(f":시계_3시: {timestamp}")
+    slack_lines.append(":bar_chart: AI 소송 모니터링")
+    slack_lines.append(f"🕒 {timestamp}")
     slack_lines.append("")
 
     # 🔁 Dedup Summary
     if slack_dedup_news and slack_dedup_cases:
-        slack_lines.append(":반복: Dedup Summary")
+        slack_lines.append(":arrows_counterclockwise: Dedup Summary")
         slack_lines.append(f"└ News {slack_dedup_news}")
         slack_lines.append(f"└ Cases {slack_dedup_cases}")
         slack_lines.append("")
 
     # 📈 Collection Status
-    slack_lines.append(":상승세인_차트: Collection Status")
+    slack_lines.append(":chart_with_upwards_trend: Collection Status")
     slack_lines.append(f"└ News: {len(lawsuits)}")
     slack_lines.append(
         f"└ Cases: {docket_case_count} (Docs: {recap_doc_count})"
@@ -210,7 +210,7 @@ def main() -> None:
     slack_lines.append("")
 
     # 🔗 GitHub
-    slack_lines.append(f":링크: GitHub: <{issue_url}|#{issue_no}>")
+    slack_lines.append(f":link: GitHub: <{issue_url}|#{issue_no}>")
 
     # 🆕 최신 RECAP 문서 (820 Copyright) - Top 3
     copyright_cases = [c for c in cl_cases if c.nature_of_suit and "820" in c.nature_of_suit]
@@ -222,7 +222,7 @@ def main() -> None:
 
     if top_cases:
         slack_lines.append("")
-        slack_lines.append(":새_항목: 최신 RECAP 문서 (820 Copyright)")
+        slack_lines.append(":new: 최신 RECAP 문서 (820 Copyright)")
 
         for c in top_cases:
             date = c.recent_updates if c.recent_updates != "미확인" else "N/A"
